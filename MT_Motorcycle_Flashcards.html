@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Montana Motorcycle Test - Flashcards</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh; color: #fff;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  header {
+    text-align: center; padding: 25px 20px 10px;
+  }
+  header h1 { font-size: 2rem; color: #e94560; }
+  header p { color: #aab; font-size: 0.95rem; margin-top: 5px; }
+
+  .controls {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    justify-content: center; padding: 10px 20px 5px;
+  }
+  .controls button {
+    padding: 8px 20px; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 0.95rem; font-weight: 600;
+    transition: transform .1s;
+  }
+  .controls button:active { transform: scale(.95); }
+  .btn-prev { background: #533483; color: #fff; }
+  .btn-flip { background: #e94560; color: #fff; }
+  .btn-next { background: #533483; color: #fff; }
+  .btn-shuffle { background: #0f3460; color: #fff; }
+  .btn-reset { background: #444; color: #fff; }
+
+  .progress {
+    color: #aab; font-size: 0.9rem; padding: 8px;
+    text-align: center;
+  }
+
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    justify-content: center; padding: 5px 20px 10px;
+    max-width: 1000px;
+  }
+  .filter-btn {
+    padding: 4px 12px; border: 1px solid #555;
+    border-radius: 20px; background: transparent;
+    color: #ccc; cursor: pointer; font-size: 0.8rem;
+    transition: all .2s;
+  }
+  .filter-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+
+  .card-container {
+    perspective: 1200px; width: 90%; max-width: 700px;
+    height: 380px; margin: 10px auto;
+  }
+  .card {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; backface-visibility: hidden;
+    border-radius: 16px; padding: 30px 35px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+  }
+  .card-front {
+    background: linear-gradient(145deg, #fff 0%, #f5f0ff 100%);
+    color: #1a1a2e;
+  }
+  .card-back {
+    background: linear-gradient(145deg, #f0f7ff 0%, #e8f0fe 100%);
+    color: #0f3460;
+    transform: rotateY(180deg);
+  }
+  .card-cat {
+    font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
+    color: #e94560; text-transform: uppercase; margin-bottom: 15px;
+  }
+  .card-text { font-size: 1.15rem; line-height: 1.6; }
+  .card-back .card-text { font-size: 1.1rem; }
+  .card-label {
+    font-size: 0.75rem; color: #999; margin-top: 15px;
+    letter-spacing: 0.5px;
+  }
+
+  .score-bar {
+    display: flex; gap: 10px; justify-content: center;
+    padding: 5px 20px 10px;
+  }
+  .score-btn {
+    padding: 6px 18px; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 0.85rem; font-weight: 600;
+  }
+  .score-know { background: #27ae60; color: #fff; }
+  .score-unsure { background: #f39c12; color: #fff; }
+  .score-dunno { background: #c0392b; color: #fff; }
+  .score-display {
+    color: #aab; font-size: 0.85rem; padding: 0 20px 15px;
+    text-align: center;
+  }
+
+  .keyboard-hint {
+    color: #667; font-size: 0.8rem; text-align: center;
+    padding: 0 20px 20px;
+  }
+
+  @media (max-width: 600px) {
+    .card-container { height: 340px; }
+    .card-text { font-size: 1rem; }
+    header h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Montana Motorcycle Test - Flashcards</h1>
+  <p>Click the card or press SPACE to flip | Arrow keys to navigate</p>
+</header>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="progress" id="progress"></div>
+
+<div class="card-container" id="cardContainer">
+  <div class="card" id="card" onclick="flip()">
+    <div class="card-face card-front">
+      <div class="card-cat" id="qCat"></div>
+      <div class="card-text" id="qText"></div>
+      <div class="card-label">QUESTION - click to reveal answer</div>
+    </div>
+    <div class="card-face card-back">
+      <div class="card-cat" id="aCat"></div>
+      <div class="card-text" id="aText"></div>
+      <div class="card-label">ANSWER - click to return to question</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn-prev" onclick="prev()">&#9664; Prev</button>
+  <button class="btn-flip" onclick="flip()">Flip Card</button>
+  <button class="btn-next" onclick="next()">Next &#9654;</button>
+  <button class="btn-shuffle" onclick="shuffleCards()">Shuffle</button>
+  <button class="btn-reset" onclick="resetCards()">Reset</button>
+</div>
+
+<div class="score-bar">
+  <button class="score-know" onclick="markCard('know')">&#10003; Know It</button>
+  <button class="score-unsure" onclick="markCard('unsure')">&#126; Unsure</button>
+  <button class="score-dunno" onclick="markCard('dunno')">&#10007; Don't Know</button>
+</div>
+<div class="score-display" id="scoreDisplay"></div>
+
+<div class="keyboard-hint">
+  Keyboard: SPACE = flip | LEFT/RIGHT = prev/next | 1 = know | 2 = unsure | 3 = don't know
+</div>
+
+<script>
+const ALL_CARDS = [
+  {
+    "cat": "Licensing",
+    "q": "What do you need to legally operate a motorcycle on Montana public roads?",
+    "a": "A valid driver license with a motorcycle endorsement."
+  },
+  {
+    "cat": "Licensing",
+    "q": "What is the minimum age to obtain a motorcycle endorsement in Montana?",
+    "a": "16 years old (or 15 with an approved driver's education course)."
+  },
+  {
+    "cat": "Licensing",
+    "q": "What are the five parts of the Montana motorcycle driver examination?",
+    "a": "1) Driving record review, 2) Physical aptitude review, 3) Vision test, 4) Written test, 5) Road test."
+  },
+  {
+    "cat": "Licensing",
+    "q": "How long is a Montana motorcycle learner permit valid?",
+    "a": "One year from the date you pass the knowledge test."
+  },
+  {
+    "cat": "Licensing",
+    "q": "What does a motorcycle learner permit allow you to do?",
+    "a": "Operate any motor-driven cycle under the immediate supervision of a licensed driver who has a valid license for motor-driven cycles."
+  },
+  {
+    "cat": "Licensing",
+    "q": "What is the annual fee for a motorcycle endorsement in Montana?",
+    "a": "$0.50 cents per year."
+  },
+  {
+    "cat": "Equipment",
+    "q": "How many headlamps must your motorcycle have, and when must they be on?",
+    "a": "At least 1 (but not more than 2), illuminated at ALL times. Must illuminate at least 500 feet ahead."
+  },
+  {
+    "cat": "Equipment",
+    "q": "How far must your taillight and reflector be visible?",
+    "a": "At least 500 feet."
+  },
+  {
+    "cat": "Equipment",
+    "q": "How far must your stoplight be visible in normal sunlight?",
+    "a": "100 feet."
+  },
+  {
+    "cat": "Equipment",
+    "q": "What is the rearview mirror requirement?",
+    "a": "It must provide a clear view of the road for at least 200 feet to the rear."
+  },
+  {
+    "cat": "Equipment",
+    "q": "What brake requirement must your motorcycle meet?",
+    "a": "At least one brake that can be operated by foot or hand."
+  },
+  {
+    "cat": "Equipment",
+    "q": "What muffler rules apply to motorcycles in Montana?",
+    "a": "Your bike must have a muffler with no modifications that increase sound. Riding in a national park requires a spark arrestor."
+  },
+  {
+    "cat": "Equipment",
+    "q": "What additional equipment should a motorcycle have beyond the legal minimum?",
+    "a": "Passenger footrests/pegs, a horn audible for 200 feet, and a license plate light."
+  },
+  {
+    "cat": "Safety Awareness",
+    "q": "What must you do when an emergency vehicle uses audio and visual signals?",
+    "a": "Yield the right-of-way, immediately drive to a position parallel and as close as possible to the right-hand edge or curb of the road."
+  },
+  {
+    "cat": "Safety Awareness",
+    "q": "On highways 50+ MPH, what should you do near a stationary emergency vehicle?",
+    "a": "Slow to at least 20 MPH below the posted limit and, when possible, move to a lane farther away from the stationary vehicle."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "What are the three most important items of protective gear?",
+    "a": "1) A DOT-compliant helmet, 2) Face or eye protection, 3) Protective clothing."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "What are the two primary types of helmets?",
+    "a": "Three-quarter (or open-face) and full-face."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "How should a helmet fit properly?",
+    "a": "It should meet U.S. DOT and state standards, fit snugly all the way around, and have no obvious defects (loose padding, frayed straps, cracks)."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "What statistics make helmets critical?",
+    "a": "One out of every five motorcycle crashes results in head/neck injuries. Helmeted riders are 3x more likely to survive head injuries. Most crashes happen < 5 miles from home at < 30 mph."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "What must effective eye or face protection do?",
+    "a": "Be free of scratches, be resistant to penetration, give a clear view to either side, fasten securely, permit airflow to reduce fogging, and permit room for eyeglasses if needed."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "Why shouldn't you rely on a windshield for eye protection?",
+    "a": "Most windshields will not protect your eyes from the wind, and neither will eyeglasses or sunglasses. They might blow off when you turn your head."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "What clothing is recommended for motorcycle riding?",
+    "a": "Jacket and pants covering arms/legs completely (leather is best), sturdy boots/shoes with slip-resistant soles covering ankles, and leather gloves."
+  },
+  {
+    "cat": "Protective Gear",
+    "q": "Why is hearing protection recommended?",
+    "a": "Long-term exposure to engine and wind noise can cause permanent hearing damage. Hearing protection still lets you hear important sounds like horns and sirens."
+  },
+  {
+    "cat": "Know Your Motorcycle",
+    "q": "What should your street-legal motorcycle have at minimum?",
+    "a": "Headlight, taillight, brakelight, front and rear brakes, turn signals, horn, and two mirrors."
+  },
+  {
+    "cat": "Know Your Motorcycle",
+    "q": "How should you choose the right motorcycle for you?",
+    "a": "It should 'fit' you: feet reach the ground when seated, controls are easy to operate. Smaller motorcycles are usually easier for beginners."
+  },
+  {
+    "cat": "Know Your Motorcycle",
+    "q": "What should you do before riding a borrowed or unfamiliar motorcycle?",
+    "a": "Make all the checks you would on your own motorcycle, find out where everything is (turn signals, horn, headlight switch, fuel-supply valve, engine cut-off switch), and ride cautiously in a controlled area first."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What does T-CLOCS stand for?",
+    "a": "T = Tires & Wheels, C = Controls, L = Lights & Electrics, O = Oil & Other Fluids, C = Chassis, S = Stands."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Tires & Wheels (T)?",
+    "a": "Tire inflation pressure, treadwear, condition of sidewalls, and tread surface."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Controls (C)?",
+    "a": "Clutch and throttle operate smoothly; throttle snaps back to closed when released; both brakes feel firm and hold the motorcycle."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Lights & Electrics (L)?",
+    "a": "Headlight (high and low beams), taillight, both turn signals, both brakes activate the brake light."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Oil & Other Fluids (O)?",
+    "a": "Engine oil and transmission fluid levels, brake hydraulic fluid, coolant level weekly, and make sure the fuel valve is open."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Chassis (C)?",
+    "a": "Front suspension (no binding), rear shocks move smoothly, chain adjusted per specs, sprockets not worn or damaged."
+  },
+  {
+    "cat": "T-CLOCS",
+    "q": "What should you check for Stands (S)?",
+    "a": "Side stand operates smoothly with spring holding it tightly up; center stand (if equipped) held firmly against the frame when moving."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "What is the correct riding posture?",
+    "a": "Sit far enough forward so arms are slightly bent at handgrips. Keep wrists flat, knees against the tank, feet firmly on footrests with toes not pointing downward."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "Why should you keep your knees against the gas tank?",
+    "a": "It helps you keep your balance as the motorcycle turns."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "What is the typical motorcycle gear pattern?",
+    "a": "1-N-2-3-4-5. Neutral is a 'half lift' from 1st gear or 'half press' from 2nd."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "What is the 3-step process for upshifting?",
+    "a": "1) Roll off the throttle as you squeeze the clutch lever, 2) Lift the shift lever firmly, 3) Smoothly ease out the clutch and adjust the throttle."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "What is the 3-step process for downshifting?",
+    "a": "1) Roll off the throttle as you squeeze the clutch lever, 2) Press the shift lever down firmly, 3) Ease out the clutch as you roll on the throttle."
+  },
+  {
+    "cat": "Basic Control",
+    "q": "Why is engine braking useful?",
+    "a": "Shifting to a lower gear causes an effect similar to using the brakes, helping you slow down. It also helps on downhills and before turns."
+  },
+  {
+    "cat": "Braking",
+    "q": "How much of total stopping power does the front brake provide?",
+    "a": "About 70% of total stopping power."
+  },
+  {
+    "cat": "Braking",
+    "q": "What is the correct braking technique for a straight-line stop?",
+    "a": "Use BOTH brakes every time. Squeeze the front brake and apply light-to-lighter pressure on the rear brake pedal."
+  },
+  {
+    "cat": "Braking",
+    "q": "What happens if the front wheel locks?",
+    "a": "Immediate loss of steering control and balance. Release the front brake immediately and completely, then reapply smoothly."
+  },
+  {
+    "cat": "Braking",
+    "q": "What happens if the rear wheel locks?",
+    "a": "The back of the motorcycle may jerk or sway side to side. Keep the rear brake locked and steer straight until stopped if the wheels are aligned. If out of alignment, releasing can cause a high-side crash."
+  },
+  {
+    "cat": "Braking",
+    "q": "How does braking in a curve differ from straight-line braking?",
+    "a": "Less traction is available because some is used for cornering. If possible, straighten the motorcycle first, then brake. If you must brake in a curve, do so smoothly and gradually."
+  },
+  {
+    "cat": "Braking",
+    "q": "What is ABS designed to do?",
+    "a": "Prevent wheel lock-up and avoid skids during straight-line panic stops. It releases and reapplies brake pressure more than 15 times per second."
+  },
+  {
+    "cat": "Braking",
+    "q": "What is the best way to stop quickly?",
+    "a": "Apply both brakes at the same time. Squeeze the front brake firmly and progressively; press down on the rear brake."
+  },
+  {
+    "cat": "Turning",
+    "q": "What are the four steps for better turning control?",
+    "a": "SLOW - reduce speed before the turn. LOOK - look through the turn to where you want to go. PRESS - press the handgrip in the direction of the turn (countersteering). ROLL - roll on the throttle to stabilize the motorcycle."
+  },
+  {
+    "cat": "Turning",
+    "q": "How does countersteering work?",
+    "a": "Press left handgrip = lean left = go left. Press right handgrip = lean right = go right. The higher the speed, the greater the lean angle needed."
+  },
+  {
+    "cat": "Turning",
+    "q": "In normal turns, how should the rider and motorcycle lean?",
+    "a": "Both the rider and motorcycle should lean together at the same angle."
+  },
+  {
+    "cat": "Turning",
+    "q": "How do slow, tight turns differ from normal turns?",
+    "a": "In slow, tight turns you counterbalance by leaning the motorcycle only and keeping your body straight (or leaning opposite)."
+  },
+  {
+    "cat": "Lane Position",
+    "q": "What are the three lane positions, and which is generally best?",
+    "a": "Position 1 (left third), Position 2 (center), Position 3 (right third). The left third is the most common default. Position 2 (center) is best if hazards are on both sides."
+  },
+  {
+    "cat": "Lane Position",
+    "q": "Why should you avoid the center of the lane?",
+    "a": "The center third is where oil, debris, and grease from cars collect, and where hazards like manhole covers are found. It can be very slippery when wet."
+  },
+  {
+    "cat": "Lane Position",
+    "q": "What should your lane position help you do?",
+    "a": "Increase your ability to see and be seen, avoid others' blind spots, avoid surface hazards, protect your lane from other drivers, set up for turns, and communicate your intentions."
+  },
+  {
+    "cat": "Following Distance",
+    "q": "What is the minimum following distance for motorcycles?",
+    "a": "A minimum of two seconds behind the vehicle ahead."
+  },
+  {
+    "cat": "Following Distance",
+    "q": "How do you gauge following distance?",
+    "a": "Pick out a marker (lamppost, pavement marking). When the vehicle ahead passes it, count 'one-thousand-one, one-thousand-two.' If you reach the marker before 'two,' you are following too closely."
+  },
+  {
+    "cat": "Following Distance",
+    "q": "When should you increase your following distance beyond 2 seconds?",
+    "a": "When pavement is slippery, you cannot see through the vehicle ahead, traffic is heavy, or someone may squeeze in front of you. Use a 3-second or greater cushion."
+  },
+  {
+    "cat": "Tailgaters",
+    "q": "What is the best way to handle a tailgater?",
+    "a": "Change lanes and let them pass. If that's not possible, slow down and open up extra space ahead of you so both you and the tailgater have room to stop."
+  },
+  {
+    "cat": "Tailgaters",
+    "q": "When should you flash your brake light?",
+    "a": "When you slow more quickly than others might expect (e.g., mid-block, alley) or when a tailgater is following too closely."
+  },
+  {
+    "cat": "Passing",
+    "q": "What are the four steps for passing another vehicle?",
+    "a": "1) Ride in the left portion of the lane, signal, and check for traffic. 2) When safe, move into the left lane and accelerate. 3) Ride through the blind spot quickly. 4) Signal again, check mirrors, return to your lane, cancel the signal."
+  },
+  {
+    "cat": "Passing",
+    "q": "What should you do when being passed?",
+    "a": "Stay in the center of your lane. Do not move to the far side of the lane; that invites the other driver to cut back in too early."
+  },
+  {
+    "cat": "Lane Sharing",
+    "q": "Is lane sharing legal in Montana?",
+    "a": "Lane sharing is usually prohibited. Cars and motorcycles need a full lane to operate safely."
+  },
+  {
+    "cat": "Lane Sharing",
+    "q": "When should you ride center-lane position to discourage lane sharing?",
+    "a": "In heavy bumper-to-bumper traffic, when other drivers want to pass you, when you are preparing to turn at an intersection, or moving into an exit lane."
+  },
+  {
+    "cat": "Intersections",
+    "q": "Where do most motorcycle/car crashes occur?",
+    "a": "At intersections. Over half of motorcycle/car crashes are caused by drivers entering a rider's right-of-way."
+  },
+  {
+    "cat": "Intersections",
+    "q": "Should you rely on 'eye contact' with a driver at an intersection?",
+    "a": "No. A driver may look right at you and still fail to 'see' you. If a car can enter your path, assume it will."
+  },
+  {
+    "cat": "Intersections",
+    "q": "What should you do at a blind intersection?",
+    "a": "Move to the lane portion that brings you into another driver's field of vision at the earliest possible moment."
+  },
+  {
+    "cat": "Intersections",
+    "q": "What should you do at a stop sign?",
+    "a": "Stop first at the stop line, then edge forward and stop again just short of where the cross-traffic lane meets your lane. Lean forward and look around buildings, parked cars, or bushes. Keep your front wheel out of the cross lane of travel."
+  },
+  {
+    "cat": "Visibility",
+    "q": "What colors are most visible to other drivers?",
+    "a": "Bright orange, red, yellow, or green jackets/vests. Reflective, bright-colored helmet and clothing are best."
+  },
+  {
+    "cat": "Visibility",
+    "q": "Why should your headlight always be on?",
+    "a": "A motorcycle with its headlight on during the day is twice as likely to be noticed. Use low beam during the day and in fog."
+  },
+  {
+    "cat": "Visibility",
+    "q": "What should you do with your signal when entering a freeway?",
+    "a": "Keep it blinking; drivers approaching from behind are more likely to see it and make room for you."
+  },
+  {
+    "cat": "SEE Strategy",
+    "q": "What does SEE stand for?",
+    "a": "Search, Evaluate, Execute - a three-step strategy to reduce risk."
+  },
+  {
+    "cat": "SEE Strategy",
+    "q": "What are the three 'lead times' experienced riders use when Searching?",
+    "a": "2 seconds - be alert and scan for immediate hazards. 4 seconds - quick response zone for things going wrong. 12 seconds - look far ahead for developing hazards to prepare early."
+  },
+  {
+    "cat": "SEE Strategy",
+    "q": "What does 'Evaluate' mean in the SEE strategy?",
+    "a": "Think about how hazards can interact to create risks. Anticipate potential problems and have a plan, especially for road/surface hazards, traffic control devices, and other vehicles."
+  },
+  {
+    "cat": "SEE Strategy",
+    "q": "What does 'Execute' mean in the SEE strategy?",
+    "a": "Create more space and minimize harm by: communicating (lights, horn), adjusting speed (accelerate, stop, slow), adjusting position (swerve, change lanes, move within lane)."
+  },
+  {
+    "cat": "SEE Strategy",
+    "q": "To reduce your reaction time, you should:",
+    "a": "Cover the clutch and the brakes so you can react faster when a hazard appears."
+  },
+  {
+    "cat": "Crash Avoidance",
+    "q": "What two skills are critical for crash avoidance?",
+    "a": "Knowing when to stop or swerve, and being able to do both quickly and properly."
+  },
+  {
+    "cat": "Crash Avoidance",
+    "q": "What do studies show about most crash-involved riders?",
+    "a": "They under-braked the front tire and over-braked the rear. They also did not separate braking from swerving when appropriate."
+  },
+  {
+    "cat": "Crash Avoidance",
+    "q": "How should you swerve to avoid an obstacle?",
+    "a": "Press the handgrip in the direction of the turn (countersteering). Do NOT brake while swerving - either brake then swerve, or swerve then brake."
+  },
+  {
+    "cat": "Crash Avoidance",
+    "q": "What is the correct technique for stopping quickly in a curve?",
+    "a": "If possible, straighten the motorcycle first, then brake. If you can't straighten, apply brakes smoothly and gradually, reducing lean angle as you slow."
+  },
+  {
+    "cat": "Cornering",
+    "q": "What is a primary cause of single-vehicle motorcycle crashes?",
+    "a": "Riders running wide in a curve or turn and hitting a fixed object or going off the road."
+  },
+  {
+    "cat": "Cornering",
+    "q": "How should you handle decreasing-radius (tighter) curves?",
+    "a": "Start at the outside of the curve to increase your line of sight, move toward the inside as you turn, then move to the outside to exit."
+  },
+  {
+    "cat": "Dangerous Surfaces",
+    "q": "Name five surfaces that provide poor traction for motorcycles.",
+    "a": "1) Wet pavement, 2) Gravel roads, 3) Mud/leaves/snow/ice, 4) Painted lane markings (wet), 5) Steel plates and manhole covers."
+  },
+  {
+    "cat": "Dangerous Surfaces",
+    "q": "How should you ride on a slippery surface?",
+    "a": "Reduce speed, avoid sudden moves, use both brakes gently, squeeze (don't grab) the front brake to avoid locking."
+  },
+  {
+    "cat": "Dangerous Surfaces",
+    "q": "When it starts to rain, which part of the lane is safest?",
+    "a": "The tire tracks left by cars. The center of the lane is most hazardous when wet because that's where oil and fluids collect."
+  },
+  {
+    "cat": "Dangerous Surfaces",
+    "q": "How should you cross railroad tracks?",
+    "a": "Ride straight across (head-on at a 90-degree angle) whenever possible. If tracks are parallel, cross at a minimum 45-degree angle. Edging across can catch your tires and throw you off balance."
+  },
+  {
+    "cat": "Dangerous Surfaces",
+    "q": "How do you ride over an obstacle you cannot avoid?",
+    "a": "Slow down as much as possible, make sure the motorcycle is straight, rise slightly off the seat on the footrests, roll on the throttle slightly just before contact to lighten the front end."
+  },
+  {
+    "cat": "Night Riding",
+    "q": "What three things should you do when riding at night?",
+    "a": "1) Reduce your speed below daytime levels, 2) Increase your following distance to at least 3 seconds, 3) Use the car ahead's headlights to preview the road and use your high beam when not following or meeting traffic."
+  },
+  {
+    "cat": "Night Riding",
+    "q": "Why are distances harder to judge at night?",
+    "a": "Your eyes rely on shadows and light contrasts that may be missing or distorted under artificial lights, making objects seem farther or closer than they really are."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "What should you do if you get a flat tire while riding?",
+    "a": "Hold handgrips firmly, ease off the throttle, and keep a straight course. If braking is required, gradually apply the brake of the tire that is NOT flat. Edge to the side of the road and stop."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "What should you do if the throttle is stuck?",
+    "a": "Twist it back and forth to free it. If that doesn't work, immediately operate the engine cut-off switch and pull in the clutch at the same time."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "How should you handle a 'wobble' (tank-slapper)?",
+    "a": "Grip the handlebars firmly but don't fight the wobble. Close the throttle gradually (don't brake). Move your weight as far forward and down as possible. Pull off the road as soon as you can."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "What causes a wobble?",
+    "a": "Improper loading, unsuitable accessories, incorrect tire pressure, worn steering parts, misaligned or out-of-balance front wheel, loose wheel bearings or spokes, or worn swingarm bearings."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "What should you do if the chain or belt breaks?",
+    "a": "You will notice an instant loss of power. Close the throttle and brake to a stop in a safe area. Loss of oil in the rear differential can cause the rear wheel to lock."
+  },
+  {
+    "cat": "Mechanical Problems",
+    "q": "What should you do if the engine seizes ('locks up')?",
+    "a": "Squeeze the clutch to disengage the engine from the rear wheel. Pull off the road and stop. Check the oil; add oil if needed, otherwise let the engine cool before restarting."
+  },
+  {
+    "cat": "Animals",
+    "q": "What should you do if an animal enters your lane?",
+    "a": "Hitting something small is less dangerous than hitting something big (like a car). Stay in your lane. For larger animals (deer, elk, cattle), brake and prepare to stop - they are unpredictable."
+  },
+  {
+    "cat": "Animals",
+    "q": "What should you do if a dog chases you?",
+    "a": "Approach the animal slowly, then accelerate away and leave it behind. Do NOT kick at it."
+  },
+  {
+    "cat": "Flying Objects",
+    "q": "How should you handle being hit by a flying object (insects, debris)?",
+    "a": "Keep your eyes on the road and your hands on the handlebars. When safe, pull off the road and repair any damage. Face protection is essential to prevent objects from hitting your eyes or face."
+  },
+  {
+    "cat": "Getting Off Road",
+    "q": "What three things should you do when leaving the road?",
+    "a": "1) Check the roadside - make sure it's firm enough to ride on. 2) Signal your intentions to drivers behind you. 3) Pull off as far as you can. It's hard for others to spot a motorcycle by the side of the road."
+  },
+  {
+    "cat": "Passengers",
+    "q": "What equipment must your motorcycle have to carry a passenger?",
+    "a": "Passenger footrests/pegs, a proper seat large enough for two without crowding, and a strap or solid handholds for the passenger."
+  },
+  {
+    "cat": "Passengers",
+    "q": "What instructions should you give a passenger before riding?",
+    "a": "Mount only after the engine is started and transmission is in neutral; sit as far forward as possible; hold your waist, hips, belt, or passenger handholds firmly; keep both feet on the footrests; lean with you; avoid unnecessary conversation and sudden moves; keep legs away from muffler(s), chains, and moving parts."
+  },
+  {
+    "cat": "Passengers",
+    "q": "How does carrying a passenger affect riding?",
+    "a": "The motorcycle responds more slowly - it takes longer to speed up, slow down, or turn. Ride a little slower in curves, start slowing earlier, and maintain a larger space cushion."
+  },
+  {
+    "cat": "Passengers",
+    "q": "Where should a child passenger be placed?",
+    "a": "Children should be placed immediately behind the rider. A child sitting in front will not be able to properly balance and may interfere with the rider's control."
+  },
+  {
+    "cat": "Cargo",
+    "q": "How should you load cargo on a motorcycle?",
+    "a": "Keep the load forward and low. Pack heavier items in the front of the tank bag. If using saddlebags, load each with about the same weight. Fasten the load securely with elastic cords (one attachment point per side recommended). Do not exceed gross vehicle weight rating."
+  },
+  {
+    "cat": "Cargo",
+    "q": "What can happen if cargo is improperly loaded?",
+    "a": "An uneven load can cause the motorcycle to pull to one side. Overloading can cause bags to catch in the wheel or chain, locking the rear wheel and causing a skid."
+  },
+  {
+    "cat": "Group Riding",
+    "q": "What formation should a group of motorcyclists use?",
+    "a": "A staggered formation. The leader rides in the left third of the lane; the second rider stays at least one second behind in the right third; the third rider is at least two seconds behind the leader in the left third, and so on."
+  },
+  {
+    "cat": "Group Riding",
+    "q": "When should a group switch from staggered to single-file formation?",
+    "a": "When riding in curves, turning, entering or leaving freeways/highways, and in any situation where the full lane width is needed."
+  },
+  {
+    "cat": "Group Riding",
+    "q": "What are the most important rules for group riding?",
+    "a": "No competition, no passing of other riders, and no tailgating. Place inexperienced riders just behind the leader."
+  },
+  {
+    "cat": "Group Riding",
+    "q": "Where should inexperienced riders position themselves in a group?",
+    "a": "Just behind the leader so they can keep pace without riding faster than they are comfortable with, and more experienced riders can watch them from behind."
+  },
+  {
+    "cat": "Group Riding",
+    "q": "What should happen if a rider falls behind during a group ride?",
+    "a": "Everyone should slow down to keep the group together. The lead rider sets the pace based on the least experienced rider."
+  },
+  {
+    "cat": "Alcohol & Drugs",
+    "q": "What BAC level is considered legally intoxicated in Montana?",
+    "a": "0.08% for adults (21+). For operators under 21, lower limits (0.00-0.02%) apply depending on the state."
+  },
+  {
+    "cat": "Alcohol & Drugs",
+    "q": "How quickly can alcohol be eliminated from the body?",
+    "a": "About one drink per hour. Alcohol may still accumulate even if you drink at a rate of one drink per hour."
+  },
+  {
+    "cat": "Alcohol & Drugs",
+    "q": "What percentage of fatal motorcycle crashes involve alcohol?",
+    "a": "Nearly 40% of all riders killed in motorcycle crashes had been drinking."
+  },
+  {
+    "cat": "Alcohol & Drugs",
+    "q": "What are the consequences of a DUI conviction in Montana?",
+    "a": "License suspension, severe fines, community service (litter pickup, washing cars at emergency wards), additional lawyer fees, lost work time, and the psychological costs of being tagged a 'drunk driver.'"
+  },
+  {
+    "cat": "Alcohol & Drugs",
+    "q": "If you wait one hour per drink before riding, are you safe?",
+    "a": "Not necessarily. Side effects from the drinking may still remain and affect your riding skills. It depends on many factors including body weight, food intake, and physical condition."
+  },
+  {
+    "cat": "Fatigue",
+    "q": "How does fatigue affect motorcycle riding?",
+    "a": "Fatigue can affect your control of the motorcycle. Motorcycling is more tiring than driving a car, and you tire sooner."
+  },
+  {
+    "cat": "Fatigue",
+    "q": "What are four tips to combat fatigue on long rides?",
+    "a": "1) Protect yourself from wind, cold, and rain. 2) Limit your distance (experienced riders suggest ~6 hours/day). 3) Take frequent rest breaks every two hours. 4) Don't drink or use drugs."
+  },
+  {
+    "cat": "Horn",
+    "q": "When should you use your horn?",
+    "a": "When a driver in the next lane is close and may want to pass; when a parked car has someone in the driver's seat; when someone is in the street riding a bicycle or walking. In an emergency, sound it loud and long."
+  },
+  {
+    "cat": "Horn",
+    "q": "Should you rely on your horn to keep you safe?",
+    "a": "No. A motorcycle's horn isn't as loud as a car's. Use it, but also have time and space to maneuver as backup strategies."
+  },
+  {
+    "cat": "Mirrors",
+    "q": "When should you check your mirrors?",
+    "a": "When stopped at an intersection (watch for cars coming up behind), before you change lanes, before you slow down, and as part of your normal scanning routine."
+  },
+  {
+    "cat": "Mirrors",
+    "q": "Why are head checks necessary in addition to mirrors?",
+    "a": "Motorcycles have blind spots just like cars. Before changing lanes, turn your head and look to the side for other vehicles."
+  },
+  {
+    "cat": "Mirrors",
+    "q": "Are convex mirrors (rounded) common on motorcycles? What's the caution?",
+    "a": "Yes, most motorcycles have convex mirrors. They provide a wider view but make cars seem farther away than they actually are."
+  },
+  {
+    "cat": "Parking",
+    "q": "How should you park a motorcycle at a curb (parallel parking)?",
+    "a": "Position the motorcycle at an angle with the rear wheel to the curb. Some cities require motorcycles to park parallel to the curb."
+  },
+  {
+    "cat": "Parked Cars",
+    "q": "How should you ride when passing parked cars?",
+    "a": "Stay toward the left of your lane to avoid problems from doors opening, drivers getting out, or people stepping between cars. If oncoming traffic is present, stay in the center-lane position."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Single File'?",
+    "a": "Arm raised, index finger extended straight up."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Stop'?",
+    "a": "Arm extended straight down, palm facing back."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Speed Up'?",
+    "a": "Arm extended straight out, palm facing up, swing upward."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Slow Down'?",
+    "a": "Arm extended straight out, palm facing down, swing down to your side."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Follow Me'?",
+    "a": "Arm extended straight up from shoulder, palm forward."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Hazard in Roadway'?",
+    "a": "On the left - point with left hand. On the right - point with right foot."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Fuel'?",
+    "a": "Arm out to side pointing to tank with finger extended."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Comfort Stop'?",
+    "a": "Forearm extended, fist clenched, with short up and down motion."
+  },
+  {
+    "cat": "Hand Signals",
+    "q": "What is the hand signal for 'Refreshment Stop'?",
+    "a": "Fingers closed, thumb to mouth."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q1: A plastic shatter-resistant face shield: (A) is not necessary if you have a windshield (B) only protects your eyes (C) helps protect your whole face (D) does not protect your face as well as goggles",
+    "a": "C - Helps protect your whole face."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q2: More than half of all crashes: (A) occur at speeds > 35 mph (B) happen at night (C) are caused by worn tires (D) involve riders with < 5 months experience on their motorcycles",
+    "a": "D - Involve riders who have less than five months of experience on their motorcycles."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q3: When riding, you should: (A) turn your head and shoulders to look through turns (B) keep your arms straight (C) keep your knees away from the gas tank (D) turn just your head and eyes to look where you are going",
+    "a": "D - Turn just your head and eyes to look where you are going."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q4: Usually, a good way to handle tailgaters is to:",
+    "a": "A - Change lanes and let them pass."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q5: To reduce your reaction time, you should:",
+    "a": "B - Cover the clutch and the brakes."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q6: Making eye contact with other drivers:",
+    "a": "C - Doesn't mean that the driver will yield."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q7: Reflective clothing should be worn:",
+    "a": "D - Be worn day and night."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q8: The best way to stop quickly is to:",
+    "a": "D - Use both brakes at the same time."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q9: When it starts to rain it is usually best to:",
+    "a": "C - Ride in the tire tracks left by cars."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q10: If your motorcycle starts to wobble:",
+    "a": "C - Grip the handlebars firmly and close the throttle gradually."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q11: If you are chased by a dog:",
+    "a": "D - Approach the animal slowly, then speed up."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q12: Passengers should:",
+    "a": "A - Lean as you lean."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q13: When riding in a group, inexperienced riders should position themselves:",
+    "a": "A - Just behind the leader."
+  },
+  {
+    "cat": "Practice Test",
+    "q": "TEST Q14: If you wait one hour per drink for alcohol to be eliminated before riding:",
+    "a": "C - Side effects from the drinking may still remain."
+  },
+  {
+    "cat": "Knowledge Test",
+    "q": "SAMPLE Q1: It is MOST important to flash your brake light when:",
+    "a": "B - Someone is following too closely."
+  },
+  {
+    "cat": "Knowledge Test",
+    "q": "SAMPLE Q2: The FRONT brake supplies how much of the potential stopping power?",
+    "a": "C - About 70%."
+  },
+  {
+    "cat": "Knowledge Test",
+    "q": "SAMPLE Q3: To swerve correctly:",
+    "a": "C - Press the handgrip in the direction of the turn."
+  },
+  {
+    "cat": "Knowledge Test",
+    "q": "SAMPLE Q4: If a tire goes flat while riding and you must stop, it is usually best to:",
+    "a": "C - Brake on the good tire and steer to the side of the road."
+  },
+  {
+    "cat": "Knowledge Test",
+    "q": "SAMPLE Q5: The car below is waiting to enter the intersection. It is best to:",
+    "a": "B - Reduce speed and be ready to react."
+  },
+  {
+    "cat": "Skill Test",
+    "q": "What abilities are tested in the on-motorcycle skill test?",
+    "a": "Know your motorcycle and riding limits; accelerate, brake, and turn safely; see, be seen, and communicate; adjust speed and position to traffic; stop, turn, and swerve quickly; make critical decisions and carry them out."
+  },
+  {
+    "cat": "Skill Test",
+    "q": "What factors do examiners score during the skill test?",
+    "a": "Selecting safe speeds, choosing correct path and staying within boundaries, completing normal and quick stops, completing normal and quick turns or swerves."
+  }
+];
+
+let cards = [...ALL_CARDS];
+let idx = 0;
+let flippedState = false;
+let scores = { know: 0, unsure: 0, dunno: 0 };
+let activeFilter = "All";
+
+function render() {
+  const c = cards[idx];
+  document.getElementById("qCat").textContent = c.cat;
+  document.getElementById("qText").textContent = c.q;
+  document.getElementById("aCat").textContent = c.cat;
+  document.getElementById("aText").textContent = c.a;
+  document.getElementById("progress").textContent =
+    `Card ${idx+1} of ${cards.length}  |  Category: ${c.cat}`;
+  document.getElementById("card").classList.remove("flipped");
+  flippedState = false;
+  updateScore();
+}
+
+function flip() {
+  document.getElementById("card").classList.toggle("flipped");
+  flippedState = !flippedState;
+}
+
+function next() {
+  if (idx < cards.length - 1) idx++;
+  else idx = 0;
+  render();
+}
+
+function prev() {
+  if (idx > 0) idx--;
+  else idx = cards.length - 1;
+  render();
+}
+
+function shuffleCards() {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  idx = 0;
+  render();
+}
+
+function resetCards() {
+  cards = activeFilter === "All"
+    ? [...ALL_CARDS]
+    : ALL_CARDS.filter(c => c.cat === activeFilter);
+  idx = 0;
+  scores = { know: 0, unsure: 0, dunno: 0 };
+  render();
+}
+
+function markCard(type) {
+  scores[type]++;
+  updateScore();
+  next();
+}
+
+function updateScore() {
+  const total = scores.know + scores.unsure + scores.dunno;
+  document.getElementById("scoreDisplay").textContent =
+    `Score: ${scores.know} Know | ${scores.unsure} Unsure | ${scores.dunno} Don't Know | ${total} reviewed`;
+}
+
+// Filter buttons
+function buildFilters() {
+  const cats = ["All", ...new Set(ALL_CARDS.map(c => c.cat))];
+  const bar = document.getElementById("filterBar");
+  cats.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (cat === "All" ? " active" : "");
+    btn.textContent = cat;
+    btn.onclick = () => {
+      activeFilter = cat;
+      cards = cat === "All" ? [...ALL_CARDS] : ALL_CARDS.filter(c => c.cat === cat);
+      idx = 0;
+      scores = { know: 0, unsure: 0, dunno: 0 };
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      render();
+    };
+    bar.appendChild(btn);
+  });
+}
+
+// Keyboard
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); flip(); }
+  else if (e.code === "ArrowRight") next();
+  else if (e.code === "ArrowLeft") prev();
+  else if (e.key === "1") markCard("know");
+  else if (e.key === "2") markCard("unsure");
+  else if (e.key === "3") markCard("dunno");
+});
+
+buildFilters();
+render();
+</script>
+</body>
+</html>

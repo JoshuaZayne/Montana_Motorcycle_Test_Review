@@ -1,0 +1,8 @@
+*.pdf
+*.pptx
+*.html
+*.csv
+__pycache__/
+*.pyc
+.git/
+.gitignore

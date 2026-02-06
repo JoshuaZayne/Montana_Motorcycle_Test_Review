@@ -1,0 +1,107 @@
+================================================================================
+  MONTANA MOTORCYCLE TEST - FLASHCARD GENERATOR
+  CLI Commands Reference
+================================================================================
+
+--------------------------------------------------------------------------------
+  1. RUN LOCALLY (without Docker)
+--------------------------------------------------------------------------------
+
+  # Install dependencies
+  pip install -r requirements.txt
+
+  # Generate all flashcard files (PDF, PPTX, HTML, CSV)
+  python generate_flashcards.py
+
+  # Output files will appear in the same directory:
+  #   MT_Motorcycle_Flashcards.pdf
+  #   MT_Motorcycle_Flashcards.pptx
+  #   MT_Motorcycle_Flashcards.html
+  #   MT_Motorcycle_Flashcards.csv
+
+  # Open the interactive HTML quiz in your browser
+  start MT_Motorcycle_Flashcards.html          # Windows
+  open MT_Motorcycle_Flashcards.html           # macOS
+  xdg-open MT_Motorcycle_Flashcards.html       # Linux
+
+--------------------------------------------------------------------------------
+  2. DOCKER COMMANDS
+--------------------------------------------------------------------------------
+
+  # Build the Docker image
+  docker build -t mt-moto-flashcards .
+
+  # Run the container and output files to ./output on your machine
+  docker run --rm -v "%cd%/output:/app/output" mt-moto-flashcards           # Windows CMD
+  docker run --rm -v "${PWD}/output:/app/output" mt-moto-flashcards         # PowerShell / Linux / macOS
+
+  # Files will appear in the ./output/ folder:
+  #   output/MT_Motorcycle_Flashcards.pdf
+  #   output/MT_Motorcycle_Flashcards.pptx
+  #   output/MT_Motorcycle_Flashcards.html
+  #   output/MT_Motorcycle_Flashcards.csv
+
+  # Run interactively (get a shell inside the container)
+  docker run --rm -it -v "${PWD}/output:/app/output" mt-moto-flashcards bash
+
+  # View running containers
+  docker ps
+
+  # List images
+  docker images
+
+  # Remove the image when done
+  docker rmi mt-moto-flashcards
+
+  # Clean up dangling images and containers
+  docker system prune
+
+--------------------------------------------------------------------------------
+  3. GIT COMMANDS
+--------------------------------------------------------------------------------
+
+  # Clone the repository
+  git clone https://github.com/JoshuaZayne/Montana_Motorcycle_Test_Review.git
+  cd Montana_Motorcycle_Test_Review
+
+  # Check status
+  git status
+
+  # Pull latest changes
+  git pull origin main
+
+  # Stage, commit, and push changes
+  git add .
+  git commit -m "your message here"
+  git push origin main
+
+--------------------------------------------------------------------------------
+  4. QUICK-START (copy-paste one-liner)
+--------------------------------------------------------------------------------
+
+  # Clone + build + run (all at once)
+  git clone https://github.com/JoshuaZayne/Montana_Motorcycle_Test_Review.git && cd Montana_Motorcycle_Test_Review && docker build -t mt-moto-flashcards . && docker run --rm -v "${PWD}/output:/app/output" mt-moto-flashcards
+
+--------------------------------------------------------------------------------
+  5. OUTPUT FILE DESCRIPTIONS
+--------------------------------------------------------------------------------
+
+  MT_Motorcycle_Flashcards.pdf   - Printable flashcards (question page + answer page)
+  MT_Motorcycle_Flashcards.pptx  - PowerPoint slideshow (click through Q&A)
+  MT_Motorcycle_Flashcards.html  - Interactive browser quiz with flip animation,
+                                   category filters, shuffle, scoring, keyboard shortcuts
+  MT_Motorcycle_Flashcards.csv   - Import into Anki, Quizlet, or any flashcard app
+                                   Columns: Category, Question, Answer
+
+--------------------------------------------------------------------------------
+  6. HTML FLASHCARD KEYBOARD SHORTCUTS
+--------------------------------------------------------------------------------
+
+  SPACE         - Flip the card (question <-> answer)
+  LEFT ARROW    - Previous card
+  RIGHT ARROW   - Next card
+  1             - Mark card as "Know It"
+  2             - Mark card as "Unsure"
+  3             - Mark card as "Don't Know"
+
+================================================================================
